@@ -12,18 +12,18 @@ import pandas as pd
 nuclei='P'
 
 # Choose the altitude
-H=1000 #m, 900 
+H=500 #m, 900 
 
 # Choose the energy
-En=10 #PeV, 10
+En=30 #PeV, 10
 
 integral=0.5
 
 # Choose the analyse
 analyse='only_sig' #elec, bg
 # analyse='electronic' #elec, bg
-analyse='sph3'
-telescope='sph3'
+# analyse='sph3'
+telescope='sph2'
 ## !!! END CHANGE ONLY HERE
 
 ###=============================================================
@@ -48,7 +48,7 @@ if analyse!='sph3':
     nmbr_pmt=results[4]
     d0=results[5]
     ratio=results[6]
-    lenght=results[10]
+    lenght=results[6]
     
     max_impuse_summed=results[9]
 
@@ -234,18 +234,22 @@ plt.show()
 
 plt.scatter(x_delta_pmt,y_delta_pmt,color='grey')
 plt.errorbar(x_delta_pmt, y_delta_pmt, yerr = y_delta_pmt_std,fmt ='o',markersize=0.1, capsize=3,color='grey')
-plt.ylabel('<$\delta$>, º')
-plt.xlabel('Число ФЭУ')
+plt.ylabel('<$\delta$>, º',fontsize=14)
+plt.xlabel('Число ФЭУ',fontsize=14)
 plt.ylim(0,5)
+plt.xticks(fontsize=12)
+plt.yticks(fontsize=12)
 plt.show()
 
 # Dependance: delta(lenght of the signal)
 
 plt.scatter(x_delta_lenght,y_delta_lenght,color='dodgerblue')
 plt.errorbar(x_delta_lenght, y_delta_lenght, yerr = y_delta_lenght_std,fmt ='o',markersize=0.1, capsize=3,color='dodgerblue')
-plt.ylabel('<$\delta$>, º')
-plt.xlabel('Длина импульса, нс ')
+plt.ylabel('<$\delta$>, º',fontsize=14)
+plt.xlabel('Длина импульса, нс ',fontsize=14)
 plt.ylim(0,5)
+plt.xticks(fontsize=12)
+plt.yticks(fontsize=12)
 plt.show()
 
 if analyse!='only_sig' and analyse!='sph3':
@@ -254,36 +258,44 @@ if analyse!='only_sig' and analyse!='sph3':
     
     plt.scatter(x_delta_ratio,y_delta_ratio,color='green')
     plt.errorbar(x_delta_ratio, y_delta_ratio, yerr = y_delta_ratio_std,fmt ='o',markersize=0.1, capsize=3,color='green')
-    plt.ylabel('<$\delta$>, º')
-    plt.xlabel('Отношение макс. сигнал / фон ')
+    plt.ylabel('<$\delta$>, º',fontsize=14)
+    plt.xlabel('Отношение макс. сигнал / фон ',fontsize=14)
     plt.ylim(0,5)
+    plt.xticks(fontsize=12)
+    plt.yticks(fontsize=12)
     plt.show()
 
 #Dependance: delta(d0)
 
 plt.scatter(x_delta_d0,y_delta_d0,color='orange')
 plt.errorbar(x_delta_d0, y_delta_d0, yerr = y_delta_d0_std,fmt ='o',markersize=0.1, capsize=3,color='orange')
-plt.ylabel('<$\delta$>, º')
-plt.xlabel('Ось ливня, м')
+plt.ylabel('<$\delta$>, º',fontsize=14)
+plt.xlabel('Ось ливня, м',fontsize=14)
 plt.ylim(0,5)
+plt.xticks(fontsize=12)
+plt.yticks(fontsize=12)
 plt.show()
 
 #Dependance: delta(max sig)
 
 plt.scatter(x_delta_max_sig,y_delta_max_sig,color='green')
 plt.errorbar(x_delta_max_sig, y_delta_max_sig, yerr = y_delta_max_sig_std,fmt ='o',markersize=0.1, capsize=3,color='green')
-plt.ylabel('<$\delta$>, º')
-plt.xlabel('Максимум сигнала, фот')
+plt.ylabel('<$\delta$>, º',fontsize=14)
+plt.xlabel('Максимум сигнала, фот',fontsize=14)
 plt.ylim(0,5)
+plt.xticks(fontsize=12)
+plt.yticks(fontsize=12)
 plt.show()
 
 #Dependance: delta(theta)
 if analyse!='sph3':
     plt.scatter(x_delta_theta,y_delta_theta,color='purple')
     plt.errorbar(x_delta_theta, y_delta_theta, yerr = y_delta_theta_std,fmt ='o',markersize=0.1, capsize=3,color='purple')
-    plt.ylabel('<$\delta$>, º')
-    plt.xlabel('$\Theta$r, º')
+    plt.ylabel('<$\delta$>, º',fontsize=14)
+    plt.xlabel('$\Theta$r, º',fontsize=14)
     plt.ylim(0,5)
+    plt.xticks(fontsize=12)
+    plt.yticks(fontsize=12)
     plt.show()
 
 
