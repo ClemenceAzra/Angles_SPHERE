@@ -13,6 +13,8 @@ class Figure:
  
 
     def get_results(self):
+
+        ## если нет результатов, то надо их получить
         if not self.results:
             if not self.angles_results.results:
                 print("No results!!")
@@ -33,8 +35,8 @@ class Figure:
         plt.grid()
         plt.ylabel('∑ Ni фот',fontsize=14)
         plt.xlabel('t, нс',fontsize=14)
-        plt.xlim(0,None)
-        # plt.ylim(-100,None)
+        plt.xlim(0,11000)
+        plt.ylim(-50,250)
         plt.xticks(fontsize=12)
         plt.yticks(fontsize=12)
         plt.show()

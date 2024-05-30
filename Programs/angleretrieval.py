@@ -5,6 +5,7 @@
 ###=========================================================================
 import pandas as pd
 import numpy as np
+import os
 
 
 class AngleRetrieval:  
@@ -52,16 +53,17 @@ class AngleRetrieval:
                 return pd.DataFrame(q)
            
             elif self.type_analyse=='experiment':
-                event = pd.read_csv(self.path, skiprows=40,skipfooter=2042,engine='python',sep='\s+',header=None)
-                event=event.drop(columns=[0,110,111,112])
-                event.columns-=1 #name of PMT from 0 to 108
-                event=event.to_numpy()
+                event = pd.read_csv(self.path, skiprows=40, skipfooter=2042,engine='python',sep='\s+',header=None)
+                event = event.drop(columns=[0,110,111,112])
+                event.columns -= 1 #name of PMT from 0 to 108
+                event = event.to_numpy()
                 q = np.zeros((self.telescope.response, self.telescope.total_number_of_pmt))  # empty array109 PMT * 1020 cells
                 for pmt in range(event.shape[1]):
                     q[0::2, pmt] = event[0::2, pmt] - np.mean(event[0:self.pied:2, pmt])
                     q[1::2, pmt] = event[1::2, pmt] - np.mean(event[1:self.pied:2, pmt])
                 for i in range(event.shape[1]):
                     q.T[i]=q.T[i]*self.telescope.coeff_amp[1].iloc[i]
+                #print(q)
                 return pd.DataFrame(q)
            
         elif self.telescope.name=='SPHERE-3':
@@ -234,7 +236,7 @@ class AngleRetrieval:
 
     
     def front_up_noise(self): #Selection CRITERIA PMT: noise / Front x,y,t,N above the noise
-        event_diapason=self.diapason()[0]
+        event_diapason = self.diapason()[0]
         N_t_amplification=self.amplification() #amplification of the new diapason
         all_window,cells_window=N_t_amplification[0],N_t_amplification[1] 
         noise_pmt=self.noise_pmt()
@@ -242,7 +244,10 @@ class AngleRetrieval:
         x_snow,y_snow,t_path=translation_snow_mos_results[0],translation_snow_mos_results[1],translation_snow_mos_results[2]
         
         #Create DataFrame x,y,t,N
-        x_y_t_N=pd.DataFrame({'PMT':num_pmt,'x':x_snow,'y':y_snow,'N_max':list(all_window.max()),'t_max':cells_window[all_window.idxmax()],'index':all_window.idxmax(),'noise_thrs':noise_pmt}).sort_values(by='N_max',ascending=False)
+        x_y_t_N=pd.DataFrame(
+            {'PMT': self.telescope.num_pmt,'x':x_snow,'y':y_snow,'N_max':list(all_window.max()),
+             't_max':cells_window[all_window.idxmax()],'index':all_window.idxmax(),
+             'noise_thrs':noise_pmt}).sort_values(by='N_max', ascending=False)
         x_y_t_N=x_y_t_N[x_y_t_N['N_max']>x_y_t_N['noise_thrs']] #save the PMT up to max noise
           
         x_y_t_N['t_max']=x_y_t_N['t_max']-t_path[np.array(x_y_t_N['PMT']).astype(int)]
@@ -257,7 +262,7 @@ class AngleRetrieval:
         x_y_t_N_good=x_y_t_N.iloc[0].to_frame().T #x,y,t,N: axis --> good PMT
         x_y_t_N_maybe=x_y_t_N.iloc[1:] #Others --> don't know
          
-        PMT_around=circle_of_pmt_around_pmt.loc[x_y_t_N_good.index[0]].dropna()[1:]  #PMT around the max, delete the central PMT
+        PMT_around=self.telescope.circle_of_pmt_around_pmt.loc[x_y_t_N_good.index[0]].dropna()[1:]  #PMT around the max, delete the central PMT
         
         #Move them from maybe to good table
         x_y_t_N_good=pd.concat([x_y_t_N_good,x_y_t_N_maybe.loc[PMT_around[PMT_around.isin(x_y_t_N_maybe['PMT'])]]]) 
@@ -268,7 +273,7 @@ class AngleRetrieval:
             bad_pmt=[]
             for i in range(0,len(x_y_t_N_maybe)):
                 looked=x_y_t_N_maybe.iloc[i] #number of the PMT in the table 2
-                PMT_around=circle_of_pmt_around_pmt.loc[looked.name].dropna()[1:]  #PMT around the PMT, delete the central PMT
+                PMT_around=self.telescope.circle_of_pmt_around_pmt.loc[looked.name].dropna()[1:]  #PMT around the PMT, delete the central PMT
                 
                 PMT_around_in_table_1=PMT_around[PMT_around.isin(x_y_t_N_good['PMT'])]
                 PMT_around_in_table_2=PMT_around[PMT_around.isin(x_y_t_N_maybe['PMT'])]
@@ -279,7 +284,7 @@ class AngleRetrieval:
                 else:
                     mean_time=x_y_t_N_good.loc[PMT_around_in_table_1]['t_max'].mean() #mean of the sure PMT around the examinated PMT
                     
-                    if looked['t_max'] <= mean_time+lim_search and  looked['t_max'] >= mean_time-lim_search: 
+                    if looked['t_max'] <= mean_time + self.telescope.lim_search and  looked['t_max'] >= mean_time - self.telescope.lim_search: 
                         good_pmt.append(looked['PMT'])
                     else:
                         bad_pmt.append(looked['PMT'])
@@ -294,24 +299,40 @@ class AngleRetrieval:
         return x_y_t_N_good
          
         
-    def neighbors(self): #Selection CRITERIA PMT: minimum 3 neighbors 
-    
-        x_y_t_N_good=self.DFS()
+    def neighbors(self): #Selection CRITERIA PMT: minimum 3 neighbors    
+        x_y_t_N_good = self.DFS()
         
         bad_PMT=[]
         for i in range(0,len(x_y_t_N_good)):
-            if len(x_y_t_N_good['PMT'][x_y_t_N_good['PMT'].isin(circle_of_pmt_around_pmt.loc[x_y_t_N_good.iloc[i][0]].dropna())].drop(x_y_t_N_good.iloc[i][0]))<2:
+            if len(x_y_t_N_good['PMT'][x_y_t_N_good['PMT'].isin(self.telescope.circle_of_pmt_around_pmt.loc[x_y_t_N_good.iloc[i][0]].dropna())].drop(x_y_t_N_good.iloc[i][0]))<2:
                 bad_PMT.append(int(x_y_t_N_good.iloc[i][0]))
         
         x_y_t_N_neighbors=x_y_t_N_good.drop(bad_PMT)
         
-        if len(x_y_t_N_neighbors)<20:
+        if len(x_y_t_N_neighbors) < 20:
             print('not enough PMT')
             return
         else:
             # self.save_results(x_y_t_N_neighbors)
+            #print(x_y_t_N_neighbors)
             return x_y_t_N_neighbors
-    
+
+    def save_front_to_file(self):
+        front = self.neighbors()
+        front = front[["PMT", "x", "y", "t_max_on_min","N_max"]].sort_values(by='PMT')
+        front['PMT']=front['PMT'].astype(int)
+        filename = self.path.split("/")
+        filename.insert(-1, "front")
+        dirname  = "/".join(filename[:-1])
+        filename = "/".join(filename).replace(".txt", "_front.txt")
+        print(self.path)
+        print(filename, dirname)
+        
+        ## проверить, что папка существует
+        if not os.path.isdir(dirname):
+            os.mkdir(dirname)
+        front.to_csv(filename, index=False)
+        
     
     def angles(self):
         #Start values of multistart
@@ -319,7 +340,11 @@ class AngleRetrieval:
         phi_initt=np.arange(0.5,6.5,0.5).tolist()*8       #in rad
 
         x_y_t_N_neighbors=self.neighbors()       
-        x_front,y_front,t_fnc,N_photons=np.array(x_y_t_N_neighbors['x']),np.array(x_y_t_N_neighbors['y']),np.array(x_y_t_N_neighbors['t_max_on_min']),np.array(x_y_t_N_neighbors['N_max']) #extract values of the x ,y, t, N of the front on snow   
+        x_front,y_front,t_fnc=(np.array(x_y_t_N_neighbors['x']),
+                               np.array(x_y_t_N_neighbors['y']),
+                               np.array(x_y_t_N_neighbors['t_max_on_min'])
+                              )        
+        N_photons = np.array(x_y_t_N_neighbors['N_max']) ## extract values of the x ,y, t, N of the front on snow   
         
         def fnc(theta,phi,a0,a1,a2):#определение функции с не заданными параметрами
                 x_casc=((np.cos(theta)*np.cos(phi))*(x_front)+(np.cos(theta)*np.sin(phi))*(y_front)) #координаты x фотонов в системе ливня
